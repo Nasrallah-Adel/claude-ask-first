@@ -1,0 +1,16 @@
+{
+  "name": "nasrallah-mods",
+  "owner": {
+    "name": "Nasrallah Adel"
+  },
+  "metadata": {
+    "description": "Claude Code mods by Nasrallah Adel."
+  },
+  "plugins": [
+    {
+      "name": "ask-first",
+      "source": "./",
+      "description": "Holds git commit, push and PR creation, and edits to Claude Code's settings files, behind a Proceed / Cancel question unless your prompt asked for them; refuses commands that would remove your own SSH or sudo access."
+    }
+  ]
+}

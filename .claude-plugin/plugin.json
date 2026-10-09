@@ -1,0 +1,52 @@
+{
+  "name": "ask-first",
+  "version": "0.1.0",
+  "description": "Holds git commit, push, PR merge and PR creation against protected branches, and edits to .claude/settings*.json, behind a Proceed / Cancel question unless your prompt or slash command asked for them; refuses deleting sudoers, authorized_keys or sshd_config and account changes that remove your own access.",
+  "author": { "name": "Nasrallah Adel" },
+  "license": "Apache-2.0",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "holdCommits": {
+      "type": "boolean",
+      "title": "Hold git commit / push / gh pr merge",
+      "default": true,
+      "description": "Ask Proceed / Cancel before a commit, push or PR merge your prompt did not ask for; a prompt saying commit, push, ship or merge, or a ship command, passes"
+    },
+    "holdSettings": {
+      "type": "boolean",
+      "title": "Hold .claude/settings*.json edits",
+      "default": true,
+      "description": "Ask before any Edit, Write or shell write to a .claude/settings.json or settings.local.json your prompt did not ask for (such an edit reloads the harness mid-turn)"
+    },
+    "protectedBranches": {
+      "type": "string",
+      "title": "Protected PR base branches",
+      "default": "main,master",
+      "description": "Comma-separated branch names; gh pr create against one of them (or with no --base) is held in a protected repo unless the prompt asked for a PR"
+    },
+    "protectedRepoPattern": {
+      "type": "string",
+      "title": "Protected repos (regex on origin URL)",
+      "default": "",
+      "description": "Repos whose PRs must not target a protected branch, as a regex matched against the origin remote; empty turns the PR-base hold off, .* covers every repo"
+    },
+    "protectedUsers": {
+      "type": "string",
+      "title": "Accounts whose access must never be removed",
+      "default": "",
+      "description": "Comma-separated usernames; deluser, usermod -G without -a, passwd -l and similar naming one of them are refused, locally or over ssh; empty uses $USER"
+    },
+    "shipCommands": {
+      "type": "string",
+      "title": "Commands that imply commit, push and PR",
+      "default": "ship-pr,fast-ship-pr,edit-pr",
+      "description": "Comma-separated slash command names (without the slash) whose turn may commit, push, open and merge PRs without a question"
+    },
+    "settingsCommands": {
+      "type": "string",
+      "title": "Commands that imply settings edits",
+      "default": "update-config,statusline,fewer-permission-prompts,config",
+      "description": "Comma-separated slash command names whose turn may edit .claude/settings*.json without a question"
+    }
+  }
+}

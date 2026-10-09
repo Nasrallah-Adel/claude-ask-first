@@ -1,0 +1,8 @@
+ask-first
+
+Copyright 2026 Nasrallah Adel, licensed under the Apache License, Version 2.0.
+
+The shell segment splitter, prefix stripping and git option walk in
+hooks/classify.ts are adapted from the "blast-radius" example in
+https://github.com/anthropics/claude-code-playground (claude-code/mods/blast-radius),
+Copyright 2026 Anthropic PBC, licensed under the Apache License, Version 2.0.
