@@ -1,6 +1,6 @@
 {
   "name": "ask-first",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Holds git commit, push, PR merge and PR creation against protected branches, and edits to .claude/settings*.json, behind a Proceed / Cancel question unless your prompt or slash command asked for them; refuses deleting sudoers, authorized_keys or sshd_config and account changes that remove your own access.",
   "author": { "name": "Nasrallah Adel" },
   "license": "Apache-2.0",

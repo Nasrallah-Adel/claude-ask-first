@@ -25,6 +25,7 @@ const PAUSED_KEY = 'isPaused'
 const PROCEED = 'Proceed'
 const CANCEL = 'Cancel'
 const DO_NOT_RETRY = 'Do not retry it unless the user asks you to.'
+const MAX_SHOWN = 300
 const FAILED = `${NAME}: its guard failed or the question was dismissed, so the call did not run. ${DO_NOT_RETRY}`
 
 const intent = atom({ plugin: 'ask-first', key: 'intent' } as const, EMPTY_INTENT)
@@ -129,7 +130,7 @@ async function guardShell<R>($: EngineInterface, command: string, run: () => Pro
 
   const holds = await holdsFor($, findings, await read($, intent))
   if (holds.length === 0) return run()
-  return hold($, holds, run)
+  return hold($, holds, command, run)
 }
 
 /** The Edit / Write guard: refuse access files, hold unasked settings edits. */
@@ -142,7 +143,7 @@ async function guardFile<R>($: EngineInterface, filePath: string, run: () => Pro
   if (!config.holdSettings || !SETTINGS_PATH.test(path)) return run()
   if (await isPaused($)) return run()
   if ((await read($, intent)).settings) return run()
-  return hold($, [{ what: `edit ${path} (a settings edit reloads the harness mid-turn)`, grants: { settings: true } }], run)
+  return hold($, [{ what: `edit ${path} (a settings edit reloads the harness mid-turn)`, grants: { settings: true } }], path, run)
 }
 
 /** Which of the findings need a Proceed / Cancel, given what the user asked for. */
@@ -182,25 +183,35 @@ async function targetsProtectedBranch($: EngineInterface, base: string | null): 
   }
 }
 
-/** Asks Proceed / Cancel; Proceed runs the call and grants its flags for the rest of the turn. */
-async function hold<R>($: EngineInterface, holds: readonly Hold[], run: () => Promise<R>): Promise<R | Deny> {
+/** Asks Proceed / Cancel, showing the exact call; logs the answer; Proceed runs the call and grants its flags for the turn. */
+async function hold<R>($: EngineInterface, holds: readonly Hold[], detail: string, run: () => Promise<R>): Promise<R | Deny> {
   const what = holds.map(h => h.what).join('; ')
+  const shown = shorten(detail)
   $.ui.status(`${NAME}: waiting on you`)
   try {
-    const answer = await $.ui.ask(`${NAME}: Claude is about to ${what}, which you did not ask for this turn. Proceed?`, {
+    const answer = await $.ui.ask(`${NAME}: Claude is about to ${what}, which you did not ask for this turn.\n\n${shown}\n\nProceed?`, {
       options: [PROCEED, CANCEL],
       header: 'Ask first',
     })
     if (answer !== PROCEED) {
-      $.ui.toast(`${NAME}: cancelled ${what}`)
+      $.ui.log(`${NAME}: you rejected ${what}: ${shown}`)
+      $.ui.toast(`${NAME}: rejected ${what}`)
       return { deny: `${NAME} held "${what}": the user pressed Cancel. ${DO_NOT_RETRY}` }
     }
+    $.ui.log(`${NAME}: you approved ${what}: ${shown}`)
+    $.ui.toast(`${NAME}: approved ${what}`)
     const grants = holds.reduce<Partial<AskFirstIntent>>((all, h) => ({ ...all, ...h.grants }), {})
     await update($, intent, current => mergeIntent(current, { ...grants, source: `${current.source} + Proceed` }))
     return run()
   } finally {
     $.ui.status(undefined)
   }
+}
+
+/** The call as shown in the dialog and the log: one trimmed string, cut at MAX_SHOWN characters. */
+function shorten(detail: string): string {
+  const trimmed = detail.trim()
+  return trimmed.length <= MAX_SHOWN ? trimmed : `${trimmed.slice(0, MAX_SHOWN)}…`
 }
 
 async function isPaused($: EngineInterface): Promise<boolean> {

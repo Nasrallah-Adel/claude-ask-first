@@ -16,6 +16,8 @@ It grew out of the corrections one developer kept typing: "why did you commit, I
 
 "Asked" means the prompt that started the turn mentions it (commit, push, ship, make/open a PR, merge, settings/hooks/statusline/permissions) or the turn was started by one of the configured ship or settings commands. A short reply ("yes", "ok", "continue", a lettered option) keeps the previous prompt's intent. Pressing Proceed grants that action for the rest of the turn, so one question covers a commit followed by an amend.
 
+The question shows the exact command or file path. After you answer, a transcript line records it, for example `ask-first: you approved git commit: git commit -m "fix tests"` or `ask-first: you rejected git push: git push origin main`.
+
 A refusal tells the model why and not to retry, so the turn continues with the rest of the work.
 
 ## Configuration

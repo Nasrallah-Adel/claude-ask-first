@@ -4,7 +4,7 @@ import { describe, expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
-type Calls = { ran: string[]; edited: string[]; asks: string[]; toasts: string[]; statuses: (string | undefined)[] }
+type Calls = { ran: string[]; edited: string[]; asks: string[]; toasts: string[]; logs: string[]; statuses: (string | undefined)[] }
 
 type World = { answer: string; remote: string | null; askThrows: boolean; user: string }
 
@@ -13,7 +13,7 @@ const PROTECTED_REPO = 'git@github.com:acme/payments.git'
 const OTHER_REPO = 'git@github.com:dev/dotfiles.git'
 
 function calls(): Calls {
-  return { ran: [], edited: [], asks: [], toasts: [], statuses: [] }
+  return { ran: [], edited: [], asks: [], toasts: [], logs: [], statuses: [] }
 }
 
 /** The engine beneath the plugin: Bash and Edit run and are recorded, the ask dialog answers from `world`. */
@@ -25,6 +25,7 @@ function fakeEngine(on: On, c: Calls, world: World) {
   on('session.repo', () => ({ value: world.remote === null ? null : { root: '/repo', remote: world.remote, internal: false, name: null } }) as never)
   on('fs.stat', ($, e) => ({ value: { kind: 'file', size: 1, mtimeMs: 0, isLink: false, realPath: e.path } }) as never)
   on('ui.status', ($, e) => { c.statuses.push((e as { text?: string }).text); return { value: undefined } as never })
+  on('ui.log', ($, e) => { c.logs.push((e as { text: string }).text); return { value: undefined } as never })
   on('ui.toast', ($, e) => { c.toasts.push((e as { text: string }).text); return { value: undefined } as never })
   on('tool.call', { tool: 'AskUserQuestion' }, ($, e) => {
     const q = (e as unknown as { questions: { question: string }[] }).questions[0]?.question ?? ''
@@ -62,6 +63,8 @@ describe('git commit and push', () => {
     await bash($, 'git add . && git commit -m "fix tests"')
     expect(c.asks.length).toBe(1)
     expect(c.asks[0]).toContain('git commit')
+    expect(c.asks[0]).toContain('git add . && git commit -m "fix tests"')
+    expect(c.logs).toEqual(['ask-first: you approved git commit: git add . && git commit -m "fix tests"'])
     expect(c.ran).toEqual(['git add . && git commit -m "fix tests"'])
     await bash($, 'git commit --amend --no-edit')
     expect(c.asks.length).toBe(1)
@@ -75,7 +78,9 @@ describe('git commit and push', () => {
     const out = await bash($, 'cd /repo && git commit -am wip')
     expect(out.deny).toContain('pressed Cancel')
     expect(c.ran).toEqual([])
-    expect(c.toasts.some(t => t.includes('cancelled'))).toBe(true)
+    expect(c.toasts.some(t => t.includes('rejected'))).toBe(true)
+    expect(c.asks[0]).toContain('cd /repo && git commit -am wip')
+    expect(c.logs).toEqual(['ask-first: you rejected git commit: cd /repo && git commit -am wip'])
     expect(c.statuses.at(-1)).toBeUndefined()
   })
 
